@@ -18,6 +18,9 @@ class Actor(models.Model):
     def __str__(self):
         return self.full_name
 
+    class Meta:
+        ordering = ["first_name", "last_name"]
+
 
 class Genre(models.Model):
     name = models.CharField(max_length=63, unique=True)
@@ -30,23 +33,20 @@ class Genre(models.Model):
 
 
 class Play(models.Model):
-    title =models.CharField(max_length=63, unique=True)
-    description =models.TextField()
-    actors = models.ManyToManyField(Actor, related_name="plays", blank=True)
-    genres = models.ManyToManyField(Genre, related_name="plays", blank=True)
-
-    def __str__(self):
-        return self.title
+    title = models.CharField(max_length=63, unique=True)
+    description = models.TextField(blank=True)
+    actors = models.ManyToManyField(Actor, related_name="plays")
+    genres = models.ManyToManyField(Genre, related_name="plays")
 
     class Meta:
         ordering = ["title"]
 
+    def __str__(self):
+        return self.title
 
 class TheatreHall(models.Model):
     name = models.CharField(max_length=63, unique=True)
-    rows = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)]
-    )
+    rows = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     seats_in_rows = models.PositiveIntegerField(
         validators=[MinValueValidator(1)]
     )
@@ -74,6 +74,9 @@ class Performance(models.Model):
         return (f'{self.play.title} - '
                 f'{self.show_time.strftime("%Y-%m-%d %H:%M")}')
 
+    class Meta:
+        ordering = ["-show_time"]
+
 
 class Reservation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -84,16 +87,25 @@ class Reservation(models.Model):
     def __str__(self):
         return f"Reserved by {self.user.email} on {self.created_at}"
 
+    class Meta:
+        ordering = ["-created_at"]
+
 
 class Ticket(models.Model):
     row = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(1)],
     )
     seat = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(1)],
     )
-    performance = models.ForeignKey(Performance, on_delete=models.PROTECT)
-    reservation = models.ForeignKey(Reservation, on_delete=models.PROTECT)
+    performance = models.ForeignKey(
+        Performance,
+        on_delete=models.PROTECT,
+    )
+    reservation = models.ForeignKey(
+        Reservation,
+        on_delete=models.PROTECT,
+    )
 
     def clean(self):
         super().clean()
@@ -104,13 +116,19 @@ class Ticket(models.Model):
             )
         if self.seat > theatre_hall.seats_in_rows:
             raise ValidationError(
-                f"Seat {self.seat} does not exist in row "
-                f"{self.row} of {theatre_hall.name}."
+                f"Seat {self.seat} does not exist in "
+                f"row {self.row} of {theatre_hall.name}."
             )
 
     def __str__(self):
         return (f"Performance: {self.performance}, "
-                f"row: {self.row}, seat: {self.seat}")
+                f"row: {self.row}, "
+                f"seat: {self.seat}, "
+                f"Hall: {self.performance.theatre_hall.name}")
 
     class Meta:
-        unique_together = ("row", "seat", "performance")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["row", "seat", "performance"], name="unique_ticket"
+            )
+        ]

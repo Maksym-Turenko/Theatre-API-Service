@@ -1,6 +1,6 @@
 from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.utils.translation import gettext as _
 
 
@@ -42,6 +42,23 @@ class User(AbstractUser):
     """User model."""
 
     email = models.EmailField(_("email address"), unique=True)
+
+    # Override related_name to prevent conflicts
+    # with groups and permissions fields in the auth.User model.
+    groups = models.ManyToManyField(
+        Group,
+        related_name="user_config_users",  # changed to avoid conflict
+        blank=True,
+        help_text=_("The groups this user belongs to."),
+        verbose_name=_("groups"),
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="user_config_users",  # changed to avoid conflict
+        blank=True,
+        help_text=_("Specific permissions for this user."),
+        verbose_name=_("user permissions"),
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]
