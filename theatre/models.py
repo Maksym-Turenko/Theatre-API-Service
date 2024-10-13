@@ -44,12 +44,11 @@ class Play(models.Model):
     def __str__(self):
         return self.title
 
+
 class TheatreHall(models.Model):
     name = models.CharField(max_length=63, unique=True)
     rows = models.PositiveIntegerField(validators=[MinValueValidator(1)])
-    seats_in_rows = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)]
-    )
+    seats_in_rows = models.PositiveIntegerField(validators=[MinValueValidator(1)])
 
     def __str__(self):
         return self.name
@@ -71,8 +70,7 @@ class Performance(models.Model):
             )
 
     def __str__(self):
-        return (f'{self.play.title} - '
-                f'{self.show_time.strftime("%Y-%m-%d %H:%M")}')
+        return f"{self.play.title} - " f'{self.show_time.strftime("%Y-%m-%d %H:%M")}'
 
     class Meta:
         ordering = ["-show_time"]
@@ -105,6 +103,9 @@ class Ticket(models.Model):
     reservation = models.ForeignKey(
         Reservation,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="tickets",
     )
 
     def clean(self):
@@ -121,10 +122,12 @@ class Ticket(models.Model):
             )
 
     def __str__(self):
-        return (f"Performance: {self.performance}, "
-                f"row: {self.row}, "
-                f"seat: {self.seat}, "
-                f"Hall: {self.performance.theatre_hall.name}")
+        return (
+            f"Performance: {self.performance}, "
+            f"row: {self.row}, "
+            f"seat: {self.seat}, "
+            f"Hall: {self.performance.theatre_hall.name}"
+        )
 
     class Meta:
         constraints = [

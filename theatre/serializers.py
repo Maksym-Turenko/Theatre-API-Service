@@ -13,8 +13,6 @@ from user_config.serializers import UserSerializer
 
 
 class ActorSerializer(serializers.ModelSerializer):
-    full_name = serializers.ReadOnlyField(source="full_name")
-
     class Meta:
         model = Actor
         fields = [
@@ -32,6 +30,26 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class PlaySerializer(serializers.ModelSerializer):
+    actors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actor.objects.all())
+    genres = serializers.PrimaryKeyRelatedField(many=True, queryset=Genre.objects.all())
+
+    class Meta:
+        model = Play
+        fields = ["id", "title", "description", "actors", "genres"]
+
+
+class PlayListSerializer(serializers.ModelSerializer):
+    actors = serializers.SlugRelatedField(
+        many=True, read_only=True, slug_field="full_name"
+    )
+    genres = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
+
+    class Meta:
+        model = Play
+        fields = ["id", "title", "description", "actors", "genres"]
+
+
+class PlayDetailSerializer(serializers.ModelSerializer):
     actors = ActorSerializer(many=True, read_only=True)
     genres = GenreSerializer(many=True, read_only=True)
 
@@ -47,7 +65,18 @@ class TheatreHallSerializer(serializers.ModelSerializer):
 
 
 class PerformanceSerializer(serializers.ModelSerializer):
-    play = PlaySerializer(read_only=True)
+    play = serializers.PrimaryKeyRelatedField(queryset=Play.objects.all())
+    theatre_hall = serializers.PrimaryKeyRelatedField(
+        queryset=TheatreHall.objects.all()
+    )
+
+    class Meta:
+        model = Performance
+        fields = ["id", "play", "theatre_hall", "show_time"]
+
+
+class PerformanceListSerializer(PerformanceSerializer):
+    play = PlayListSerializer(read_only=True)
     theatre_hall = TheatreHallSerializer(read_only=True)
 
     class Meta:
@@ -55,18 +84,136 @@ class PerformanceSerializer(serializers.ModelSerializer):
         fields = ["id", "play", "theatre_hall", "show_time"]
 
 
-class ReservationSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+class PerformanceDetailSerializer(serializers.ModelSerializer):
+    play = PlayDetailSerializer()
+    theatre_hall = TheatreHallSerializer()
 
     class Meta:
-        model = Reservation
-        fields = ["id", "created_at", "user"]
+        model = Performance
+        fields = ["id", "play", "theatre_hall", "show_time"]
+
+    def validate_ticket_id(self, value):
+        if value.reservation is not None:
+            raise serializers.ValidationError("This ticket is already reserved.")
+        return value
+
+    def create(self, validated_data):
+        ticket = validated_data["ticket"]
+        reservation = Reservation.objects.create(**validated_data)
+        ticket.reservation = reservation
+        ticket.save()
+        return reservation
 
 
 class TicketSerializer(serializers.ModelSerializer):
-    performance = PerformanceSerializer(read_only=True)
-    reservation = ReservationSerializer(read_only=True)
+    performance = serializers.PrimaryKeyRelatedField(queryset=Performance.objects.all())
 
     class Meta:
         model = Ticket
-        fields = ["id", "row", "seat", "performance", "reservation"]
+        fields = ["id", "row", "seat", "performance"]
+
+
+class TicketListSerializer(serializers.ModelSerializer):
+    performance = serializers.SlugRelatedField(read_only=True, slug_field="play__title")
+    reservation_username = serializers.SerializerMethodField()
+    reservation_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Ticket
+        fields = [
+            "id",
+            "row",
+            "seat",
+            "performance",
+            "reservation_username",
+            "reservation_email",
+        ]
+
+    def get_reservation_username(self, obj):
+        if obj.reservation:
+            return obj.reservation.user.username
+        return None
+
+    def get_reservation_email(self, obj):
+        if obj.reservation:
+            return obj.reservation.user.email
+        return None
+
+
+class TicketDetailSerializer(TicketSerializer):
+    performance = serializers.SerializerMethodField()
+    reservation = serializers.SerializerMethodField()
+
+    class Meta(TicketSerializer.Meta):
+        fields = ["row", "seat", "performance", "reservation"]
+
+    def get_performance(self, obj):
+        return {
+            "title": obj.performance.play.title,
+            "actors": [actor.full_name for actor in obj.performance.play.actors.all()],
+            "genres": [genre.name for genre in obj.performance.play.genres.all()],
+            "theatre_hall": {
+                "name": obj.performance.theatre_hall.name,
+                "rows": obj.performance.theatre_hall.rows,
+                "seats_in_rows": obj.performance.theatre_hall.seats_in_rows,
+            },
+            "show_time": obj.performance.show_time,
+        }
+
+    def get_reservation(self, obj):
+        if obj.reservation:
+            return {
+                "username": obj.reservation.user.username,
+                "email": obj.reservation.user.email,
+            }
+        return None
+
+
+class ReservationSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    ticket_id = serializers.PrimaryKeyRelatedField(
+        queryset=Ticket.objects.all(), write_only=True
+    )
+    play_title = serializers.SerializerMethodField()
+    seat_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Reservation
+        fields = ["id", "created_at", "play_title", "seat_info", "ticket_id", "user"]
+
+    def get_play_title(self, obj):
+        ticket = obj.tickets.first()
+        if ticket:
+            return ticket.performance.play.title
+        return None
+
+    def get_seat_info(self, obj):
+        ticket = obj.tickets.first()
+        if ticket:
+            return f"Row: {ticket.row}, Seat: {ticket.seat}"
+        return None
+
+    def validate_ticket_id(self, value):
+        if value.reservation is not None:
+            raise serializers.ValidationError("This ticket is already reserved.")
+        return value
+
+    def create(self, validated_data):
+        user = validated_data["user"]
+        ticket = validated_data["ticket_id"]
+
+        reservation = Reservation.objects.create(user=user)
+
+        ticket.reservation = reservation
+        ticket.save()
+
+        return reservation
+
+
+class ReservationDetailSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    tickets = TicketDetailSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Reservation
+        fields = ["id", "created_at", "user", "tickets"]
