@@ -9,7 +9,6 @@ from theatre.models import (
     Reservation,
     Ticket,
 )
-from user_config.serializers import UserSerializer
 
 
 class ActorSerializer(serializers.ModelSerializer):
@@ -74,14 +73,26 @@ class PerformanceSerializer(serializers.ModelSerializer):
         model = Performance
         fields = ["id", "play", "theatre_hall", "show_time"]
 
+    def validate(self, data):
+        performance = Performance(**data)
+        performance.clean()
+        return data
 
-class PerformanceListSerializer(PerformanceSerializer):
+
+class PerformanceListSerializer(serializers.ModelSerializer):
     play = PlayListSerializer(read_only=True)
-    theatre_hall = TheatreHallSerializer(read_only=True)
+    theatre_hall = serializers.SerializerMethodField()
 
     class Meta:
         model = Performance
         fields = ["id", "play", "theatre_hall", "show_time"]
+
+    def get_theatre_hall(self, obj):
+        return {
+            "name": obj.theatre_hall.name,
+            "rows": obj.theatre_hall.rows,
+            "seats_in_rows": obj.theatre_hall.seats_in_rows,
+        }
 
 
 class PerformanceDetailSerializer(serializers.ModelSerializer):
@@ -111,6 +122,18 @@ class TicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = ["id", "row", "seat", "performance"]
+
+    def validate(self, data):
+        performance = data["performance"]
+        theatre_hall = performance.theatre_hall
+        existing_tickets = Ticket.objects.filter(performance=performance).count()
+
+        if existing_tickets >= (theatre_hall.rows * theatre_hall.seats_in_rows):
+            raise serializers.ValidationError(
+                "The number of tickets exceeds the hall capacity."
+            )
+
+        return data
 
 
 class TicketListSerializer(serializers.ModelSerializer):

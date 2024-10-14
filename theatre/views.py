@@ -1,6 +1,5 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.serializers import ValidationError
 from theatre.models import (
     Actor,
     Genre,
@@ -23,7 +22,8 @@ from theatre.serializers import (
     PlayDetailSerializer,
     PerformanceListSerializer,
     PerformanceDetailSerializer,
-    TicketDetailSerializer, ReservationDetailSerializer,
+    TicketDetailSerializer,
+    ReservationDetailSerializer,
 )
 
 
