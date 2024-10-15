@@ -126,13 +126,21 @@ class TicketSerializer(serializers.ModelSerializer):
     def validate(self, data):
         performance = data["performance"]
         theatre_hall = performance.theatre_hall
+        if data["row"] > theatre_hall.rows:
+            raise serializers.ValidationError(
+                {"row": f"Row {data['row']} does not exist in {theatre_hall.name}."}
+            )
+        if data["seat"] > theatre_hall.seats_in_rows:
+            raise serializers.ValidationError(
+                {
+                    "seat": f"Seat {data['seat']} does not exist in row {data['row']} of {theatre_hall.name}."
+                }
+            )
         existing_tickets = Ticket.objects.filter(performance=performance).count()
-
         if existing_tickets >= (theatre_hall.rows * theatre_hall.seats_in_rows):
             raise serializers.ValidationError(
                 "The number of tickets exceeds the hall capacity."
             )
-
         return data
 
 

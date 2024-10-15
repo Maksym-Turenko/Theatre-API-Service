@@ -1,7 +1,8 @@
+from datetime import timedelta
+
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
-from datetime import timedelta
 from django.core.exceptions import ValidationError
 
 from user_config.models import User

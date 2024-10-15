@@ -20,5 +20,5 @@ router.register(r"reservations", ReservationViewSet)
 router.register(r"tickets", TicketViewSet)
 
 urlpatterns = [
-    path("", include(router.urls)),
+    path("api/v1/", include(router.urls)),
 ]
