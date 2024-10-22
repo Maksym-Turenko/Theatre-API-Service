@@ -1,0 +1,11 @@
+.venv
+.gitignore
+.dockerignore
+.flake8
+README.md
+db.sqlite3
+theatre/tests
+.idea
+__pycache__
+*.py[cod]
+*.log

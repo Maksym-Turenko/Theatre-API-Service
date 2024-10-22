@@ -439,7 +439,7 @@
     "model": "theatre.theatrehall",
     "pk": 1,
     "fields": {
-        "name": "Hall ¹1",
+        "name": "Hall ï¿½1",
         "rows": 10,
         "seats_in_rows": 20
     }
@@ -448,7 +448,7 @@
     "model": "theatre.theatrehall",
     "pk": 2,
     "fields": {
-        "name": "Hall ¹2",
+        "name": "Hall ï¿½2",
         "rows": 20,
         "seats_in_rows": 10
     }
@@ -457,7 +457,7 @@
     "model": "theatre.theatrehall",
     "pk": 3,
     "fields": {
-        "name": "Hall ¹3",
+        "name": "Hall ï¿½3",
         "rows": 20,
         "seats_in_rows": 10
     }
