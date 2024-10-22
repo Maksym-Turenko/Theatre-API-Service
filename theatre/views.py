@@ -1,6 +1,9 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+from theatre.permissions import IsAdminOrReadOnly
 from theatre.models import (
     Actor,
     Genre,
@@ -28,10 +31,16 @@ from theatre.serializers import (
 )
 
 
+@extend_schema(tags=["Actors"])
 class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
-
+    permission_classes = [IsAdminOrReadOnly]
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("name", str, description="Filter actors by full name")
+        ]
+    )
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get("name")
@@ -49,11 +58,33 @@ class ActorViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("name", str, description="Filter actors by full name")
+        ]
+    )
+    @extend_schema(
+        parameters=[OpenApiParameter("name", str, description="Filter actors by name")],
+        responses={200: ActorSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+    @extend_schema(description="Retrieve actor by ID", responses={200: ActorSerializer})
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+
+@extend_schema(tags=["Genres"])
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        parameters=[OpenApiParameter("name", str, description="Filter genres by name")],
+        responses={200: GenreSerializer(many=True)},
+    )
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get("name")
@@ -64,9 +95,22 @@ class GenreViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+@extend_schema(tags=["Plays"])
 class PlayViewSet(viewsets.ModelViewSet):
     queryset = Play.objects.all()
+    permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "actor_name", str, description="Filter plays by actor name"
+            ),
+            OpenApiParameter("play_title", str, description="Filter plays by title"),
+            OpenApiParameter(
+                "genre_name", str, description="Filter plays by genre name"
+            ),
+        ]
+    )
     def get_serializer_class(self):
         if self.action == "list":
             return PlayListSerializer
@@ -84,13 +128,13 @@ class PlayViewSet(viewsets.ModelViewSet):
             names = actor_name.split()
             if len(names) == 2:
                 queryset = queryset.filter(
-                    Q(actors__first_name__icontains=names[0]) &
-                    Q(actors__last_name__icontains=names[1])
+                    Q(actors__first_name__icontains=names[0])
+                    & Q(actors__last_name__icontains=names[1])
                 ).distinct()
             else:
                 queryset = queryset.filter(
-                    Q(actors__first_name__icontains=actor_name) |
-                    Q(actors__last_name__icontains=actor_name)
+                    Q(actors__first_name__icontains=actor_name)
+                    | Q(actors__last_name__icontains=actor_name)
                 ).distinct()
 
         if play_title:
@@ -101,15 +145,52 @@ class PlayViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @extend_schema(
+        responses={200: PlayListSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        responses={200: PlayDetailSerializer},
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+
+@extend_schema(tags=["Theatre Halls"])
 class TheatreHallViewSet(viewsets.ModelViewSet):
     queryset = TheatreHall.objects.all()
     serializer_class = TheatreHallSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    @extend_schema(responses={200: TheatreHallSerializer(many=True)})
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(responses={200: TheatreHallSerializer})
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
 
+@extend_schema(tags=["Performances"])
 class PerformanceViewSet(viewsets.ModelViewSet):
     queryset = Performance.objects.all()
+    permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "play_title", str, description="Filter performances by play title"
+            ),
+            OpenApiParameter(
+                "actor_name", str, description="Filter performances by actor name"
+            ),
+            OpenApiParameter(
+                "hall_name", str, description="Filter performances by hall name"
+            ),
+        ]
+    )
     def get_serializer_class(self):
         if self.action == "list":
             return PerformanceListSerializer
@@ -145,9 +226,23 @@ class PerformanceViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @extend_schema(
+        responses={200: PerformanceListSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
+    @extend_schema(
+        responses={200: PerformanceDetailSerializer},
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+
+@extend_schema(tags=["Reservations"])
 class ReservationViewSet(viewsets.ModelViewSet):
     queryset = Reservation.objects.all()
+    permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -156,9 +251,18 @@ class ReservationViewSet(viewsets.ModelViewSet):
             return ReservationDetailSerializer
         return ReservationSerializer
 
+    @extend_schema(responses={201: ReservationSerializer})
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "username", str, description="Filter reservations by username"
+            )
+        ],
+        responses={200: ReservationSerializer(many=True)},
+    )
     def get_queryset(self):
         queryset = super().get_queryset()
         username = self.request.query_params.get("username")
@@ -171,8 +275,21 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadOnly]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "hall_name", str, description="Filter tickets by hall name"
+            ),
+            OpenApiParameter(
+                "performance_title",
+                str,
+                description="Filter tickets by performance title",
+            ),
+            OpenApiParameter("username", str, description="Filter tickets by username"),
+        ]
+    )
     def get_serializer_class(self):
         if self.action == "list":
             return TicketListSerializer
@@ -199,3 +316,15 @@ class TicketViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user__username__icontains=username)
 
         return queryset
+
+    @extend_schema(
+        responses={200: TicketListSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(
+        responses={200: TicketDetailSerializer},
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
