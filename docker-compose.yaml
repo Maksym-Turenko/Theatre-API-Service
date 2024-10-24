@@ -16,6 +16,8 @@ services:
       - ./:/app
     depends_on:
       - db
+    environment:
+      - RUNNING_IN_DOCKER=True
 
   db:
     image: postgres:16.0-alpine3.17
