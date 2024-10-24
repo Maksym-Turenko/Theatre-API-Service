@@ -97,7 +97,7 @@ class GenreViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["Plays"])
 class PlayViewSet(viewsets.ModelViewSet):
-    queryset = Play.objects.all()
+    queryset = Play.objects.prefetch_related("actors", "genres")
     permission_classes = [IsAdminOrReadOnly]
 
     @extend_schema(
@@ -175,7 +175,7 @@ class TheatreHallViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["Performances"])
 class PerformanceViewSet(viewsets.ModelViewSet):
-    queryset = Performance.objects.all()
+    queryset = Performance.objects.select_related("play", "theatre_hall").prefetch_related("play__actors")
     permission_classes = [IsAdminOrReadOnly]
 
     @extend_schema(
@@ -241,7 +241,7 @@ class PerformanceViewSet(viewsets.ModelViewSet):
 
 @extend_schema(tags=["Reservations"])
 class ReservationViewSet(viewsets.ModelViewSet):
-    queryset = Reservation.objects.all()
+    queryset = Reservation.objects.select_related("user")
     permission_classes = [IsAuthenticated]
 
     def get_serializer_class(self):
@@ -274,7 +274,9 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
 
 class TicketViewSet(viewsets.ModelViewSet):
-    queryset = Ticket.objects.all()
+    queryset = Ticket.objects.select_related(
+        "performance", "performance__theatre_hall", "reservation"
+    )
     permission_classes = [IsAdminOrReadOnly]
 
     @extend_schema(
