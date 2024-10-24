@@ -78,63 +78,63 @@ class ViewSetTests(TestCase):
     def test_actor_view_set_filtering(self):
         response = self.client.get(reverse("actor-list") + "?name=John")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['results']), 1)
 
     def test_genre_view_set_filtering(self):
         response = self.client.get(reverse("genre-list") + "?name=Drama")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_play_view_set_filtering_by_actor(self):
         response = self.client.get(reverse("play-list") + "?actor_name=John Doe")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_play_view_set_filtering_by_title(self):
         response = self.client.get(reverse("play-list") + "?play_title=Test Play")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_play_view_set_filtering_by_genre(self):
         response = self.client.get(reverse("play-list") + "?genre_name=Drama")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_performance_view_set_filtering_by_play_title(self):
         response = self.client.get(
             reverse("performance-list") + "?play_title=Test Play"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_performance_view_set_filtering_by_actor(self):
         response = self.client.get(reverse("performance-list") + "?actor_name=John Doe")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_performance_view_set_filtering_by_hall_name(self):
         response = self.client.get(reverse("performance-list") + "?hall_name=Test Hall")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_reservation_view_set_filtering_by_username(self):
         response = self.client.get(reverse("reservation-list") + "?username=testuser")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_ticket_view_set_filtering_by_hall_name(self):
         response = self.client.get(reverse("ticket-list") + "?hall_name=Test Hall")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_ticket_view_set_filtering_by_performance_title(self):
         response = self.client.get(
             reverse("ticket-list") + "?performance_title=Test Play"
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_ticket_view_set_filtering_by_username(self):
         response = self.client.get(reverse("ticket-list") + "?username=testuser")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)

@@ -168,7 +168,7 @@ class TicketSerializerTests(TestCase):
         ticket_data = {"row": 11, "seat": 1, "performance": self.performance.id}
         serializer = TicketSerializer(data=ticket_data)
         self.assertFalse(serializer.is_valid())
-        self.assertIn("row", serializer.errors)
+        self.assertIn("Row 11 does not exist in Test Hall.", serializer.errors["__all__"])
 
 
 class ReservationSerializerTests(TestCase):

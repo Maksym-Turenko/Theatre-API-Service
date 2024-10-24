@@ -222,8 +222,7 @@ class PerformanceViewSet(viewsets.ModelViewSet):
                 ).distinct()
 
         if hall_name:
-            queryset = queryset.filter(play__theatre_hall__name__icontains=hall_name)
-
+            queryset = queryset.filter(theatre_hall__name__icontains=hall_name)
         return queryset
 
     @extend_schema(
@@ -281,14 +280,8 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter(
-                "hall_name", str, description="Filter tickets by hall name"
-            ),
-            OpenApiParameter(
-                "performance_title",
-                str,
-                description="Filter tickets by performance title",
-            ),
+            OpenApiParameter("hall_name", str, description="Filter tickets by hall name"),
+            OpenApiParameter("performance_title", str, description="Filter tickets by performance title"),
             OpenApiParameter("username", str, description="Filter tickets by username"),
         ]
     )
@@ -309,14 +302,13 @@ class TicketViewSet(viewsets.ModelViewSet):
         username = self.request.query_params.get("username")
 
         if hall_name:
-            queryset = queryset.filter(theatre_hall__name__icontains=hall_name)
+            queryset = queryset.filter(performance__theatre_hall__name__icontains=hall_name)
 
         if performance_title:
-            queryset = queryset.filter(performance__title__icontains=performance_title)
+            queryset = queryset.filter(performance__play__title__icontains=performance_title)
 
         if username:
-            queryset = queryset.filter(user__username__icontains=username)
-
+            queryset = queryset.filter(reservation__user__username__icontains=username)
         return queryset
 
     @extend_schema(
