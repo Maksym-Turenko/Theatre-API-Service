@@ -4,8 +4,10 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
 
-from user_config.models import User
+
+User = get_user_model()
 
 
 class Actor(models.Model):
