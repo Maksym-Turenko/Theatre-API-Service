@@ -272,6 +272,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return queryset
 
 
+@extend_schema(tags=["Tickets"])
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.select_related(
         "performance", "performance__theatre_hall", "reservation"
