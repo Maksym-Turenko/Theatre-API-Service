@@ -36,11 +36,7 @@ class ActorViewSet(viewsets.ModelViewSet):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
     permission_classes = [IsAdminOrReadOnly]
-    @extend_schema(
-        parameters=[
-            OpenApiParameter("name", str, description="Filter actors by full name")
-        ]
-    )
+
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get("name")
@@ -81,10 +77,6 @@ class GenreViewSet(viewsets.ModelViewSet):
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-    @extend_schema(
-        parameters=[OpenApiParameter("name", str, description="Filter genres by name")],
-        responses={200: GenreSerializer(many=True)},
-    )
     def get_queryset(self):
         queryset = super().get_queryset()
         name = self.request.query_params.get("name")
@@ -100,17 +92,6 @@ class PlayViewSet(viewsets.ModelViewSet):
     queryset = Play.objects.prefetch_related("actors", "genres")
     permission_classes = [IsAdminOrReadOnly]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "actor_name", str, description="Filter plays by actor name"
-            ),
-            OpenApiParameter("play_title", str, description="Filter plays by title"),
-            OpenApiParameter(
-                "genre_name", str, description="Filter plays by genre name"
-            ),
-        ]
-    )
     def get_serializer_class(self):
         if self.action == "list":
             return PlayListSerializer
@@ -178,19 +159,6 @@ class PerformanceViewSet(viewsets.ModelViewSet):
     queryset = Performance.objects.select_related("play", "theatre_hall").prefetch_related("play__actors")
     permission_classes = [IsAdminOrReadOnly]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "play_title", str, description="Filter performances by play title"
-            ),
-            OpenApiParameter(
-                "actor_name", str, description="Filter performances by actor name"
-            ),
-            OpenApiParameter(
-                "hall_name", str, description="Filter performances by hall name"
-            ),
-        ]
-    )
     def get_serializer_class(self):
         if self.action == "list":
             return PerformanceListSerializer
@@ -254,14 +222,6 @@ class ReservationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "username", str, description="Filter reservations by username"
-            )
-        ],
-        responses={200: ReservationSerializer(many=True)},
-    )
     def get_queryset(self):
         queryset = super().get_queryset()
         username = self.request.query_params.get("username")
@@ -279,13 +239,6 @@ class TicketViewSet(viewsets.ModelViewSet):
     )
     permission_classes = [IsAdminOrReadOnly]
 
-    @extend_schema(
-        parameters=[
-            OpenApiParameter("hall_name", str, description="Filter tickets by hall name"),
-            OpenApiParameter("performance_title", str, description="Filter tickets by performance title"),
-            OpenApiParameter("username", str, description="Filter tickets by username"),
-        ]
-    )
     def get_serializer_class(self):
         if self.action == "list":
             return TicketListSerializer
